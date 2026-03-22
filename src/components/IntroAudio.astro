@@ -5,22 +5,25 @@
  * Estética terminal/cyberpunk coherente con el resto de la UI.
  */
 interface Props {
-  src: string;
+  src?: string;
   label?: string;
   duration?: number;
+  volume?: number;
 }
 
-const { src, label = "INTRO.MP3", duration = 30 } = Astro.props;
+const { label = "BGM", volume = 0.45 } = Astro.props;
 ---
 
 <div
   id="intro-audio-player"
   class="intro-audio-wrap"
   aria-label="Reproductor de audio intro"
+  data-default-label={label}
+  data-volume={String(volume)}
 >
   <!-- Indicador de tipo terminal -->
   <span class="intro-audio-prefix" aria-hidden="true">$</span>
-  <span class="intro-audio-cmd" aria-hidden="true">play</span>
+  <span class="intro-audio-cmd" aria-hidden="true">播放</span>
 
   <!-- Botón play/pause -->
   <button
@@ -74,7 +77,7 @@ const { src, label = "INTRO.MP3", duration = 30 } = Astro.props;
     role="progressbar"
     aria-valuenow={0}
     aria-valuemin={0}
-    aria-valuemax={duration}
+    aria-valuemax={0}
     aria-label="Progreso del audio"
   >
     <div class="intro-progress-bar" id="intro-progress-bar"></div>
@@ -82,21 +85,14 @@ const { src, label = "INTRO.MP3", duration = 30 } = Astro.props;
 
   <!-- Tiempo -->
   <span class="intro-time" id="intro-time" aria-live="off">
-    <span id="intro-current">0:00</span><span class="opacity-30"> /</span><span
-      class="opacity-30"
-    >
-      {Math.floor(duration / 60)}:{String(duration % 60).padStart(2, "0")}</span
-    >
+    <span id="intro-current">0:00</span><span class="opacity-30"> / </span><span id="intro-total" class="opacity-30">--:--</span>
   </span>
 
   <!-- Etiqueta del archivo -->
-  <span class="intro-label" aria-label={`Archivo: ${label}`}>{label}</span>
+  <span id="intro-label" class="intro-label" aria-label={`Archivo: ${label}`}>{label}</span>
 
   <!-- Elemento audio nativo (oculto) -->
-  <audio id="intro-audio-el" preload="metadata" aria-hidden="true">
-    <source src={src} type="audio/mpeg" />
-    Tu navegador no soporta el elemento audio.
-  </audio>
+  <audio id="intro-audio-el" preload="metadata" aria-hidden="true"></audio>
 </div>
 
 <style>
@@ -273,7 +269,32 @@ const { src, label = "INTRO.MP3", duration = 30 } = Astro.props;
 </style>
 
 <script>
+  const PLAYLIST = [
+    "/audio/C418 - Aria Math.mp3",
+    "/audio/C418 - Living Mice.mp3",
+    "/audio/C418 - Mice on Venus.mp3",
+    "/audio/C418 - Minecraft.mp3",
+    "/audio/C418 - Subwoofer Lullaby.mp3",
+    "/audio/C418 - Sweden.mp3",
+    "/audio/C418 - Wet Hands.mp3",
+  ];
+
+  let introAudioCleanup: AbortController | null = null;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const fmt = (secs: number) => {
+    const s = Math.floor(secs);
+    return `${Math.floor(s / 60)}:${pad(s % 60)}`;
+  };
+
+  const getTrackTitle = (src: string) =>
+    decodeURIComponent(src.split("/").pop() ?? "BGM").replace(/\.[^.]+$/, "");
+
   function initIntroAudio() {
+    if (introAudioCleanup) introAudioCleanup.abort();
+    introAudioCleanup = new AbortController();
+    const { signal } = introAudioCleanup;
+
     const wrap = document.getElementById(
       "intro-audio-player"
     ) as HTMLElement | null;
@@ -298,14 +319,14 @@ const { src, label = "INTRO.MP3", duration = 30 } = Astro.props;
     const current = document.getElementById(
       "intro-current"
     ) as HTMLElement | null;
+    const total = document.getElementById("intro-total") as HTMLElement | null;
+    const label = document.getElementById("intro-label") as HTMLElement | null;
 
-    if (!wrap || !audio || !btn) return;
-
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const fmt = (secs: number) => {
-      const s = Math.floor(secs);
-      return `${Math.floor(s / 60)}:${pad(s % 60)}`;
-    };
+    if (!wrap || !audio || !btn || PLAYLIST.length === 0) return;
+    const defaultLabel = wrap.dataset.defaultLabel || "BGM";
+    const volume = Math.min(Math.max(Number(wrap.dataset.volume ?? "0.45"), 0), 1);
+    let currentIndex = Math.floor(Math.random() * PLAYLIST.length);
+    audio.volume = volume;
 
     const setPlaying = (playing: boolean) => {
       wrap.classList.toggle("playing", playing);
@@ -319,46 +340,109 @@ const { src, label = "INTRO.MP3", duration = 30 } = Astro.props;
       );
     };
 
-    btn.addEventListener("click", () => {
-      if (audio.paused) {
-        audio.play().catch(() => {
-          /* autoplay bloqueado, ignorar */
-        });
-      } else {
-        audio.pause();
-      }
-    });
-
-    audio.addEventListener("play", () => setPlaying(true));
-    audio.addEventListener("pause", () => setPlaying(false));
-    audio.addEventListener("ended", () => {
-      setPlaying(false);
+    const setTrack = (index: number) => {
+      currentIndex = ((index % PLAYLIST.length) + PLAYLIST.length) % PLAYLIST.length;
+      const src = PLAYLIST[currentIndex];
+      audio.src = encodeURI(src);
+      audio.load();
+      if (label) label.textContent = `${defaultLabel} · ${getTrackTitle(src)}`;
       if (bar) bar.style.width = "0%";
       if (current) current.textContent = "0:00";
-      if (track) track.setAttribute("aria-valuenow", "0");
-      audio.currentTime = 0;
-    });
+      if (total) total.textContent = "--:--";
+      if (track) {
+        track.setAttribute("aria-valuenow", "0");
+        track.setAttribute("aria-valuemax", "0");
+      }
+    };
+
+    const playCurrent = async () => {
+      try {
+        await audio.play();
+      } catch {
+        // 自动播放可能被浏览器策略拦截，等待首次用户交互解锁
+      }
+    };
+
+    const playNext = async () => {
+      setTrack(currentIndex + 1);
+      await playCurrent();
+    };
+
+    btn.addEventListener(
+      "click",
+      () => {
+        if (audio.paused) {
+          void playCurrent();
+        } else {
+          audio.pause();
+        }
+      },
+      { signal }
+    );
+
+    audio.addEventListener("play", () => setPlaying(true), { signal });
+    audio.addEventListener("pause", () => setPlaying(false), { signal });
+    audio.addEventListener("ended", () => {
+      void playNext();
+    }, { signal });
+
+    audio.addEventListener(
+      "loadedmetadata",
+      () => {
+        const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+        if (total) total.textContent = duration > 0 ? fmt(duration) : "--:--";
+        if (track) {
+          track.setAttribute("aria-valuemax", String(Math.floor(duration)));
+        }
+      },
+      { signal }
+    );
 
     audio.addEventListener("timeupdate", () => {
-      const total = audio.duration || 0;
+      const duration = audio.duration || 0;
       const now = audio.currentTime;
-      const pct = total > 0 ? (now / total) * 100 : 0;
+      const pct = duration > 0 ? (now / duration) * 100 : 0;
       if (bar) bar.style.width = `${pct}%`;
       if (current) current.textContent = fmt(now);
       if (track) track.setAttribute("aria-valuenow", String(Math.floor(now)));
-    });
+    }, { signal });
 
     // Clic en la barra de progreso para saltar
-    track?.addEventListener("click", (e: MouseEvent) => {
-      const rect = track.getBoundingClientRect();
-      const ratio = (e.clientX - rect.left) / rect.width;
-      const total = audio.duration || 0;
-      if (total > 0) {
-        audio.currentTime = ratio * total;
-      }
+    track?.addEventListener(
+      "click",
+      (e: MouseEvent) => {
+        const rect = track.getBoundingClientRect();
+        const ratio = (e.clientX - rect.left) / rect.width;
+        const duration = audio.duration || 0;
+        if (duration > 0) {
+          audio.currentTime = ratio * duration;
+        }
+      },
+      { signal }
+    );
+
+    const unlockAndPlay = () => {
+      if (!audio.paused) return;
+      void playCurrent();
+    };
+
+    // 尝试自动播放；若被拦截则在首次交互时解锁
+    setTrack(currentIndex);
+    void playCurrent();
+
+    document.addEventListener("pointerdown", unlockAndPlay, {
+      signal,
+      once: true,
+      capture: true,
+    });
+    document.addEventListener("keydown", unlockAndPlay, {
+      signal,
+      once: true,
+      capture: true,
     });
   }
 
   // Compatible con View Transitions de Astro
+  initIntroAudio();
   document.addEventListener("astro:page-load", initIntroAudio);
 </script>

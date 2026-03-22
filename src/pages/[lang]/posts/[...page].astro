@@ -1,0 +1,22 @@
+---
+import type { GetStaticPaths } from "astro";
+import { getCollection } from "astro:content";
+import BasePostsPage from "../../posts/[...page].astro";
+import { SITE } from "@/config";
+import { SUPPORTED_LANGS } from "@/i18n/ui";
+import getSortedPosts from "@/utils/getSortedPosts";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const posts = await getCollection("blog", ({ data }) => !data.draft);
+  const sortedPosts = getSortedPosts(posts);
+
+  return SUPPORTED_LANGS.flatMap(lang =>
+    paginate(sortedPosts, {
+      pageSize: SITE.postPerPage,
+      params: { lang },
+    })
+  );
+}) satisfies GetStaticPaths;
+---
+
+<BasePostsPage page={Astro.props.page} />

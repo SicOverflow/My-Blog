@@ -1,0 +1,32 @@
+---
+import { type CollectionEntry, getCollection } from "astro:content";
+import BaseGalleryDetailPage from "../../galleries/[gallery].astro";
+import { SITE } from "@/config";
+import { SUPPORTED_LANGS } from "@/i18n/ui";
+
+type Props = {
+  entry: CollectionEntry<"galleries">;
+};
+
+export async function getStaticPaths() {
+  if (!SITE.showGalleries) return [];
+
+  const galleries = await getCollection("galleries", ({ data }) => !data.draft);
+
+  return SUPPORTED_LANGS.flatMap(lang =>
+    galleries.map(gallery => ({
+      params: {
+        lang,
+        gallery: gallery.id
+          .replace(/\/index\.(md|mdx)$/, "")
+          .replace(/\.(md|mdx)$/, ""),
+      },
+      props: { entry: gallery },
+    }))
+  );
+}
+
+const { entry } = Astro.props as Props;
+---
+
+<BaseGalleryDetailPage entry={entry} />

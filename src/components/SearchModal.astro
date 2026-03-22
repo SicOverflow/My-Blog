@@ -1,5 +1,9 @@
 ---
 import "@pagefind/default-ui/css/ui.css";
+import { getLangFromPath, t } from "@/i18n/ui";
+
+const lang = getLangFromPath(Astro.url.pathname);
+const i18n = t(lang);
 ---
 
 <!-- Search Modal Overlay -->
@@ -8,7 +12,9 @@ import "@pagefind/default-ui/css/ui.css";
   class="search-modal-overlay"
   role="dialog"
   aria-modal="true"
-  aria-label="Buscar en el sitio"
+  aria-label={i18n.searchInSite}
+  data-dev-warning-title={i18n.devModeWarningTitle}
+  data-build-first-hint={i18n.buildFirstHint}
 >
   <div class="search-modal-backdrop" data-search-close></div>
   <div class="search-modal-container" data-modal-card>
@@ -48,19 +54,19 @@ import "@pagefind/default-ui/css/ui.css";
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
         </span>
-        <span class="search-title-text">Buscar</span>
+        <span class="search-title-text">{i18n.search}</span>
       </div>
       <div class="search-modal-shortcuts">
         <kbd class="kbd-key">⌘</kbd>
         <kbd class="kbd-key">K</kbd>
         <span class="shortcuts-sep">·</span>
         <kbd class="kbd-key">esc</kbd>
-        <span class="shortcuts-label">cerrar</span>
+        <span class="shortcuts-label">{i18n.close}</span>
       </div>
       <button
         class="search-modal-close"
         data-search-close
-        aria-label="Cerrar búsqueda"
+        aria-label={i18n.close}
       >
         <svg
           class="size-4"
@@ -97,7 +103,7 @@ import "@pagefind/default-ui/css/ui.css";
           </svg>
         </div>
         <p class="empty-text">
-          Escribe para buscar artículos, tutoriales e ideas...
+          {i18n.searchHint}
         </p>
       </div>
     </div>
@@ -105,13 +111,13 @@ import "@pagefind/default-ui/css/ui.css";
     <!-- Footer -->
     <div class="search-modal-footer">
       <div class="footer-hint">
-        <span class="footer-icon">↵</span> abrir
+        <span class="footer-icon">↵</span> {i18n.open}
       </div>
       <div class="footer-hint">
-        <span class="footer-icon">↑↓</span> navegar
+        <span class="footer-icon">↑↓</span> {i18n.browseNavigate}
       </div>
       <div class="footer-powered">
-        powered by <strong>pagefind</strong>
+        {i18n.poweredBy} <strong>pagefind</strong>
       </div>
     </div>
   </div>
@@ -119,6 +125,8 @@ import "@pagefind/default-ui/css/ui.css";
 
 <script>
   let cleanupHelper: AbortController | null = null;
+  const PAGEFIND_BUNDLE_PATH = "/pagefind/";
+  const MODAL_PAGEFIND_SELECTOR = "#modal-pagefind-search";
 
   function initSearchModal() {
     // Clean up previous listeners if they exist to avoid duplication on page navigation
@@ -134,7 +142,7 @@ import "@pagefind/default-ui/css/ui.css";
     const emptyState = modal.querySelector(
       "[data-search-empty]"
     ) as HTMLElement;
-    let pagefindLoaded = false;
+    let pagefindLoading = false;
 
     // Mouse follow glow on card
     if (card && glow) {
@@ -166,9 +174,8 @@ import "@pagefind/default-ui/css/ui.css";
       modal!.classList.add("active");
       document.body.style.overflow = "hidden";
 
-      if (!pagefindLoaded) {
+      if (!modal!.querySelector(".pagefind-ui") && !pagefindLoading) {
         loadPagefind();
-        pagefindLoaded = true;
       }
 
       setTimeout(() => {
@@ -226,55 +233,67 @@ import "@pagefind/default-ui/css/ui.css";
     async function loadPagefind() {
       const container = document.getElementById("modal-pagefind-search");
       if (!container) return;
-
-      if (import.meta.env.DEV) {
-        container.innerHTML = `
-          <div class="bg-muted/75 rounded-lg p-4 space-y-3 border border-accent/10">
-            <p class="text-sm"><strong>⚠ DEV mode</strong> — Build the project first to enable search.</p>
-            <code class="block bg-black text-white text-xs px-3 py-2 rounded-lg font-mono">pnpm run build</code>
-          </div>`;
-      }
+      pagefindLoading = true;
+      const devWarningTitle =
+        modal?.getAttribute("data-dev-warning-title") || "Dev mode warning";
+      const buildFirstHint =
+        modal?.getAttribute("data-build-first-hint") || "Run pnpm run build first.";
 
       const onIdle =
         window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1));
       onIdle(async () => {
-        if (signal.aborted) return;
-        
-        // Ensure Pagefind UI does not re-initialize on the same element
-        if (container.querySelector(".pagefind-ui")) return;
+        try {
+          if (signal.aborted || container.querySelector(".pagefind-ui")) return;
+          if (import.meta.env.DEV) {
+            console.info("[SearchModal] Initializing PagefindUI", {
+              element: MODAL_PAGEFIND_SELECTOR,
+              bundlePath: PAGEFIND_BUNDLE_PATH,
+              hint: `${devWarningTitle}: ${buildFirstHint}`,
+            });
+          }
 
-        // @ts-expect-error — Missing types for @pagefind/default-ui package.
-        const { PagefindUI } = await import("@pagefind/default-ui");
+          // @ts-expect-error — Missing types for @pagefind/default-ui package.
+          const { PagefindUI } = await import("@pagefind/default-ui");
 
-        // Navigation may have occurred while the module was loading (first load, uncached)
-        if (signal.aborted || container.querySelector(".pagefind-ui")) return;
+          // Navigation may have occurred while the module was loading (first load, uncached)
+          if (signal.aborted || container.querySelector(".pagefind-ui")) return;
 
-        new PagefindUI({
-          element: "#modal-pagefind-search",
-          showImages: false,
-          showSubResults: true,
-        });
+          new PagefindUI({
+            element: MODAL_PAGEFIND_SELECTOR,
+            bundlePath: PAGEFIND_BUNDLE_PATH,
+            showImages: false,
+            showSubResults: true,
+          });
 
-        // Hide empty state when user types
-        const input = modal!.querySelector<HTMLInputElement>(
-          ".pagefind-ui__search-input"
-        );
-        if (input && emptyState) {
-          input.addEventListener(
-            "input",
-            () => {
-              // Ensure we check value to toggle empty state
-              emptyState.style.display = input.value.trim() ? "none" : "";
-            },
-            { signal }
+          // Hide empty state when user types
+          const input = modal!.querySelector<HTMLInputElement>(
+            ".pagefind-ui__search-input"
           );
-        }
+          if (input && emptyState) {
+            input.addEventListener(
+              "input",
+              () => {
+                emptyState.style.display = input.value.trim() ? "none" : "";
+              },
+              { signal }
+            );
+          }
 
-        // Refocus input if modal is open (essential for first load)
-        if (modal!.classList.contains("active")) {
-          setTimeout(() => {
-            input?.focus();
-          }, 200);
+          // Refocus input if modal is open (essential for first load)
+          if (modal!.classList.contains("active")) {
+            setTimeout(() => {
+              input?.focus();
+            }, 200);
+          }
+        } catch (error) {
+          console.error("[SearchModal] Pagefind initialization failed", error);
+          container.innerHTML = `
+            <div class="bg-muted/75 rounded-lg p-4 space-y-2 border border-accent/10">
+              <p class="text-sm"><strong>${devWarningTitle}</strong></p>
+              <p class="text-sm">${buildFirstHint}</p>
+            </div>`;
+        } finally {
+          pagefindLoading = false;
         }
       });
     }
@@ -334,7 +353,8 @@ import "@pagefind/default-ui/css/ui.css";
     );
   }
 
-  // Initialize on load and on view transitions navigation
+  // Initialize immediately and on view transitions navigation
+  initSearchModal();
   document.addEventListener("astro:page-load", initSearchModal);
 </script>
 

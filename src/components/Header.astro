@@ -7,13 +7,30 @@ import IconSunHigh from "@/assets/icons/IconSunHigh.svg";
 import Logo from "@/assets/logo/devosfera.svg";
 import LinkButton from "./LinkButton.astro";
 import MobileMenu from "./MobileMenu.astro";
+import LanguageSwitcher from "./LanguageSwitcher.astro";
 import { SITE } from "@/config";
+import { getLangFromPath, getLocalePath, stripLangFromPath, t } from "@/i18n/ui";
 
 const { pathname } = Astro.url;
 
+const lang = getLangFromPath(pathname);
+const i18n = t(lang);
+
+const localeHomePath = getLocalePath(lang);
+const postsPath = getLocalePath(lang, "posts");
+const tagsPath = getLocalePath(lang, "tags");
+const aboutPath = getLocalePath(lang, "about");
+const searchPath = getLocalePath(lang, "search");
+const archivesPath = getLocalePath(lang, "archives");
+const galleriesPath = getLocalePath(lang, "galleries");
+
+const routePathWithoutLang = `/${stripLangFromPath(pathname)}`.replace(/\/+$/, "") || "/";
+
 // Remove trailing slash from current pathname if exists
 const currentPath =
-  pathname.endsWith("/") && pathname !== "/" ? pathname.slice(0, -1) : pathname;
+  routePathWithoutLang.endsWith("/") && routePathWithoutLang !== "/"
+    ? routePathWithoutLang.slice(0, -1)
+    : routePathWithoutLang;
 
 const isActive = (path: string) => {
   const currentPathArray = currentPath.split("/").filter(p => p.trim());
@@ -21,6 +38,7 @@ const isActive = (path: string) => {
 
   return currentPath === path || currentPathArray[0] === pathArray[0];
 };
+
 ---
 
 <a
@@ -28,7 +46,7 @@ const isActive = (path: string) => {
   href="#main-content"
   class="absolute start-16 -top-full z-50 rounded-b-lg bg-accent px-4 py-2 font-medium text-background transition-all focus:top-0"
 >
-  Skip to content
+  {i18n.skipToContent}
 </a>
 
 <header id="main-header" class="sticky top-0 z-40 w-full transition-colors duration-300">
@@ -45,7 +63,7 @@ const isActive = (path: string) => {
       >
         <!-- Logo -->
         <a
-          href="/"
+          href={localeHomePath}
           class="group relative z-20 flex items-center gap-2 text-xl font-bold tracking-tight sm:text-2xl"
         >
           <!-- <span class="nav-logo-text">{SITE.title}</span> -->
@@ -58,7 +76,9 @@ const isActive = (path: string) => {
           <button
             id="menu-btn"
             class="hamburger-btn sm:hidden"
-            aria-label="Open Menu"
+            aria-label={i18n.openMenu}
+            data-open-menu-label={i18n.openMenu}
+            data-close-menu-label={i18n.closeMenu}
             aria-expanded="false"
             aria-controls="mobile-menu"
           >
@@ -73,46 +93,46 @@ const isActive = (path: string) => {
           <ul class="hidden sm:flex sm:flex-row sm:items-center sm:gap-1">
             <li>
               <a
-                href="/posts"
+                href={postsPath}
                 class:list={["nav-link", { "nav-active": isActive("/posts") }]}
-                >Posts</a
+                >{i18n.posts}</a
               >
             </li>
             <li>
               <a
-                href="/tags"
+                href={tagsPath}
                 class:list={["nav-link", { "nav-active": isActive("/tags") }]}
-                >Tags</a
+                >{i18n.tags}</a
               >
             </li>
             <li>
               <a
-                href="/about"
+                href={aboutPath}
                 class:list={["nav-link", { "nav-active": isActive("/about") }]}
-                >About</a
+                >{i18n.about}</a
               >
             </li>
             <li class="flex items-center">
               <a
-                href="/search"
+                href={searchPath}
                 class:list={["nav-link", { "nav-active": isActive("/search") }]}
-                title="Ir a búsqueda">Search</a
+                title={i18n.search}>{i18n.search}</a
               >
             </li>
             {
               SITE.showArchives && (
                 <li>
                   <LinkButton
-                    href="/archives"
+                    href={archivesPath}
                     class:list={[
                       "nav-link",
                       { "nav-active": isActive("/archives") },
                     ]}
-                    title="Archives"
-                    aria-label="archives"
+                    title={i18n.archives}
+                    aria-label={i18n.archives}
                   >
                     <IconArchive class="hidden sm:inline-block" />
-                    <span class="sm:sr-only">Archives</span>
+                    <span class="sm:sr-only">{i18n.archives}</span>
                   </LinkButton>
                 </li>
               )
@@ -121,16 +141,16 @@ const isActive = (path: string) => {
               SITE.showGalleries && (
                 <li>
                   <LinkButton
-                    href="/galleries"
+                    href={galleriesPath}
                     class:list={[
                       "nav-link",
                       { "nav-active": isActive("/galleries") },
                     ]}
-                    title="Galerías"
-                    aria-label="galleries"
+                    title={i18n.galleries}
+                    aria-label={i18n.galleries}
                   >
                     <IconGallery class="hidden sm:inline-block" />
-                    <span class="sm:sr-only">Galerías</span>
+                    <span class="sm:sr-only">{i18n.galleries}</span>
                   </LinkButton>
                 </li>
               )
@@ -145,13 +165,16 @@ const isActive = (path: string) => {
               <button
                 data-search-trigger
                 class="nav-search-btn"
-                title="Buscar (⌘K)"
-                aria-label="Abrir búsqueda"
+                title={i18n.searchShortcut}
+                aria-label={i18n.openSearch}
                 aria-keyshortcuts="Meta+K"
               >
                 <IconSearch class="size-4.5" />
                 <kbd class="nav-kbd">⌘K</kbd>
               </button>
+            </li>
+            <li class="flex items-center">
+              <LanguageSwitcher />
             </li>
             {
               SITE.lightAndDarkMode && (
@@ -159,7 +182,7 @@ const isActive = (path: string) => {
                   <button
                     id="theme-btn"
                     class="nav-icon-btn relative"
-                    title="Toggles light & dark"
+                    title={i18n.toggleTheme}
                     aria-label="auto"
                     aria-live="polite"
                   >
@@ -486,10 +509,12 @@ const isActive = (path: string) => {
     const backdrop = document.querySelector(".mobile-menu-backdrop");
 
     if (!menuBtn || !mobileMenu) return;
+    const openMenuLabel = menuBtn.getAttribute("data-open-menu-label") || "Open menu";
+    const closeMenuLabel = menuBtn.getAttribute("data-close-menu-label") || "Close menu";
     
     const closeMenu = () => {
       menuBtn.setAttribute("aria-expanded", "false");
-      menuBtn.setAttribute("aria-label", "Open Menu");
+      menuBtn.setAttribute("aria-label", openMenuLabel);
       mobileMenu.classList.remove("is-open");
       mobileMenu.setAttribute("aria-hidden", "true");
     };
@@ -503,7 +528,7 @@ const isActive = (path: string) => {
           closeMenu();
         } else {
           menuBtn.setAttribute("aria-expanded", "true");
-          menuBtn.setAttribute("aria-label", "Close Menu");
+          menuBtn.setAttribute("aria-label", closeMenuLabel);
           mobileMenu.classList.add("is-open");
           mobileMenu.setAttribute("aria-hidden", "false");
         }

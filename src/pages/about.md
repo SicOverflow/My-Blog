@@ -1,30 +1,72 @@
 ---
 layout: ../layouts/AboutLayout.astro
-title: "About"
+title: "关于我"
 ---
 
-Bienvenido a mi rincón digital. Soy un **desarrollador** y **estudiante** apasionado por la tecnología, los videojuegos y construir cosas que vivan en internet.
+一个前端 **freshman** 正在思考如何高效率学习
 
-## ¿Quién soy?
+## 我是谁
 
-Me llamo Andrés, y desde que recuerdo siempre tuve curiosidad por entender cómo funcionan las cosas — desde desarmar juguetes de niño hasta desarmar código ajeno a las 2 AM. Actualmente estudio ingeniería mientras desarrollo proyectos que me retan a aprender algo nuevo cada día.
+你好，我是段清衡。
 
-Cuando no estoy programando, probablemente estoy en algún mundo virtual explorando mapas, completando misiones o compitiendo online. Los videojuegos no solo son mi hobby, también me enseñaron a resolver problemas, trabajar en equipo y, sobre todo, a no rendirme después del intento #847.
+我正在学习前端开发，也把这个博客当作自己的长期练习场。这里会记录我在技术学习、项目实践、界面设计和日常思考中的过程。对我来说，写博客不只是输出内容，更像是在整理认知、复盘问题，也是在给未来的自己留下一份可回看的成长记录。
 
-## Lo que hago
+我喜欢那种“把一个想法真正做出来”的感觉。无论是写一个小组件、改一个页面交互，还是把一个功能从想法变成能运行的代码，这个过程都会让我很有成就感。
 
-- **Desarrollo web** — Me encanta construir experiencias web modernas con tecnologías como Astro, React, TypeScript y todo lo que el ecosistema JavaScript tiene para ofrecer.
-- **Open Source** — Creo en el poder del código abierto. Puedes encontrar mis proyectos en [GitHub](https://github.com/0xdres/).
-- **Aprendizaje continuo** — Siempre estoy explorando nuevas herramientas, frameworks y conceptos. La tecnología evoluciona rápido y me gusta ir al ritmo.
+---
 
-## Gaming
+## 我在做什么
 
-Los videojuegos son parte de mi ADN. Desde RPGs épicos hasta shooters competitivos, disfruto prácticamente cualquier género. Es ese espacio donde la creatividad se encuentra con la estrategia y la diversión pura.
+目前我主要在学习和实践前端相关的内容，包括：
 
-## Este blog
+- HTML、CSS、JavaScript 基础能力
+- 组件化开发与页面结构设计
+- Astro 博客搭建与静态站点开发
+- UI 细节调整、交互体验和视觉表达
+- 一些工程化内容，比如构建、部署、i18n 和项目结构整理
 
-**Devosfera** nació como un espacio para documentar mi viaje como desarrollador, compartir lo que aprendo y conectar con personas que comparten las mismas pasiones. Aquí encontrarás posts sobre desarrollo, tecnología, y alguna que otra reflexión random de madrugada.
+我希望自己不只是“会写代码”，而是真的能独立完成一个有设计感、有结构、能上线的个人作品。
 
-Si quieres conectar, no dudes en encontrarme en [GitHub](https://github.com/0xdres/), [X](https://x.com/avdyen) o [LinkedIn](https://www.linkedin.com/in/avdyan/). Siempre es bueno conocer gente cool de la comunidad.
+---
 
-> _"El código es poesía, pero con más puntos y comas."_ — Yo, probablemente
+## 为什么写这个博客
+
+我搭这个博客，一方面是为了记录自己的学习过程，另一方面也是想把它变成一个长期迭代的个人项目。
+
+相比单纯刷教程，我更希望在真实项目里练习前端能力。这个博客正好给了我一个持续动手的空间：我可以一边写文章，一边改页面，一边理解组件、样式、交互和工程结构。它既是内容平台，也是我的前端实验场。
+
+以后这里会慢慢出现这些内容：
+
+- 学习笔记
+- 项目开发记录
+- 页面和 UI 改造过程
+- 一些技术问题的排查与总结
+- 偶尔也会写一点和成长、效率、思考有关的内容
+
+---
+
+## 我感兴趣的东西
+
+除了前端开发，我也对这些方向很感兴趣：
+
+- 界面设计与产品体验
+- 技术写作
+- 个人知识管理
+- 效率工具与工作流
+- 游戏、数字内容和互联网文化
+
+我很喜欢“技术 + 表达 + 设计感”结合在一起的东西，这也是我希望这个博客慢慢形成的气质。
+
+---
+
+## 现在的我
+
+现在的我还在持续学习的阶段，也还有很多不懂的东西。
+
+但我越来越相信一件事：真正的成长，不是一下子变得很厉害，而是愿意长期做一件事，愿意一点点修正、积累、迭代。这个博客就是这种积累的一部分。
+
+如果你恰好也在学习技术、搭建自己的项目，或者只是偶然来到这里，希望这里的内容能给你一点参考，或者一点共鸣。
+
+---
+
+> _Man hat also in der Welt nur die Wahl zwischen Einsamkeit und Gemeinheit._  —Arthur Schopenhauer

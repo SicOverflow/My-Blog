@@ -1,0 +1,29 @@
+---
+import { getCollection } from "astro:content";
+import type { GetStaticPathsOptions } from "astro";
+import BaseTagPaginationPage from "../../../tags/[tag]/[...page].astro";
+import { SITE } from "@/config";
+import { SUPPORTED_LANGS } from "@/i18n/ui";
+import getPostsByTag from "@/utils/getPostsByTag";
+import getUniqueTags from "@/utils/getUniqueTags";
+
+export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
+  const posts = await getCollection("blog");
+  const tags = getUniqueTags(posts);
+
+  return SUPPORTED_LANGS.flatMap(lang =>
+    tags.flatMap(({ tag, tagName }) =>
+      paginate(getPostsByTag(posts, tag), {
+        params: { lang, tag },
+        props: { tagName },
+        pageSize: SITE.postPerPage,
+      })
+    )
+  );
+}
+---
+
+<BaseTagPaginationPage
+  page={Astro.props.page}
+  tagName={Astro.props.tagName}
+/>

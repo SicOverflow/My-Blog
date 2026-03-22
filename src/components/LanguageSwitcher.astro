@@ -1,0 +1,18 @@
+---
+import { getLangFromPath, getLocalizedUrl, language } from "@/i18n/ui";
+
+const currentLang = getLangFromPath(Astro.url.pathname);
+const nextLang = currentLang === "zh" ? "en" : "zh";
+const switchLabel = currentLang === "zh" ? "EN" : "中";
+const href = getLocalizedUrl(Astro.url, nextLang);
+---
+
+<a
+  href={href}
+  data-astro-reload
+  class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[0.6875rem] font-semibold tracking-wide text-foreground transition-colors hover:bg-accent/10 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+  aria-label={`切换语言到 ${language[nextLang]}`}
+  title={`切换语言到 ${language[nextLang]}`}
+>
+  {switchLabel}
+</a>

@@ -1,9 +1,12 @@
 ---
 import IconChevronLeft from "@/assets/icons/IconChevronLeft.svg";
 import { SITE } from "@/config";
+import { getLangFromPath, getLocalePath, stripLangFromPath } from "@/i18n/ui";
 
 // Build breadcrumb from current URL
-const currentUrlPath = Astro.url.pathname.replace(/\/+$/, "");
+const lang = getLangFromPath(Astro.url.pathname);
+const localeHomePath = getLocalePath(lang);
+const currentUrlPath = stripLangFromPath(Astro.url.pathname).replace(/\/+$/, "");
 const pathSegments = currentUrlPath.split("/").filter(s => s.trim());
 ---
 
@@ -15,7 +18,7 @@ const pathSegments = currentUrlPath.split("/").filter(s => s.trim());
           {/* Back button */}
           <a
             id="back-button"
-            href="/"
+            href={localeHomePath}
             class="back-btn group inline-flex shrink-0 items-center justify-center gap-1 rounded-md px-1.5 py-0.5 text-foreground/50 transition-all duration-200 hover:bg-muted/10 hover:text-accent"
           >
             <IconChevronLeft class="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5 rtl:rotate-180 rtl:group-hover:translate-x-0.5" />
@@ -38,7 +41,7 @@ const pathSegments = currentUrlPath.split("/").filter(s => s.trim());
 
             {/* Home / Root */}
             <a
-              href="/"
+              href={localeHomePath}
               class="breadcrumb-link shrink-0 rounded-md px-1.5 py-0.5 text-foreground/50 transition-colors duration-200 hover:bg-muted/10 hover:text-accent"
               aria-label="Ir a inicio"
               title="Inicio"
@@ -64,7 +67,10 @@ const pathSegments = currentUrlPath.split("/").filter(s => s.trim());
                   </span>
                 ) : (
                   <a
-                    href={`/${pathSegments.slice(0, index + 1).join("/")}/`}
+                    href={getLocalePath(
+                      lang,
+                      pathSegments.slice(0, index + 1).join("/")
+                    )}
                     class="breadcrumb-link shrink-0 rounded-md px-1.5 py-0.5 capitalize text-foreground/50 transition-colors duration-200 hover:bg-muted/10 hover:text-accent"
                   >
                     {decodeURIComponent(segment)}

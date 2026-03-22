@@ -1,0 +1,8 @@
+---
+import BaseTagsPage from "../../tags/index.astro";
+import { getLanguageStaticPaths } from "@/i18n/ui";
+
+export const getStaticPaths = getLanguageStaticPaths;
+---
+
+<BaseTagsPage />

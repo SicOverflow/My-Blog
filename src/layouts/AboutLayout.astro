@@ -25,16 +25,20 @@ const { frontmatter } = Astro.props;
         <div class="avatar-ring">
           <div class="avatar-glow"></div>
           <div class="avatar-inner">
-            <span class="avatar-emoji">👨‍💻</span>
+              <img
+                src="/avatar.webp"
+                alt="段清衡"
+                class="avatar-img"
+                />
           </div>
         </div>
         <h1 class="hero-title">
-          <span class="greeting">¡Hola! Soy</span>
+          <span class="greeting">Hi! 你好</span>
           <span class="name-glow">{SITE.author}</span>
         </h1>
         <div class="hero-badges">
           <span class="badge" data-badge>🚀 Developer</span>
-          <span class="badge" data-badge>📚 Estudiante</span>
+          <span class="badge" data-badge>📚 Reading...</span>
           <span class="badge" data-badge>🎮 Gamer</span>
         </div>
       </div>

@@ -10,6 +10,7 @@ import Pagination from "@/components/Pagination.astro";
 import "@pagefind/default-ui/css/ui.css";
 import getSortedPosts from "@/utils/getSortedPosts";
 import { SITE } from "@/config";
+import { getLangFromPath, t } from "@/i18n/ui";
 
 export const getStaticPaths = (async ({ paginate }) => {
   const posts = await getCollection("blog", ({ data }) => !data.draft);
@@ -18,9 +19,11 @@ export const getStaticPaths = (async ({ paginate }) => {
 
 const { page } = Astro.props;
 const totalPosts = page.total;
+const lang = getLangFromPath(Astro.url.pathname);
+const i18n = t(lang);
 ---
 
-<Layout title={`Posts | ${SITE.title}`}>
+<Layout title={`${i18n.postsPageTitle} | ${SITE.title}`}>
   <Header />
   <Breadcrumb />
   <main id="main-content" class="app-layout pb-4">
@@ -32,17 +35,20 @@ const totalPosts = page.total;
       <div class="aurora-mouse" data-posts-mouse></div>
       <div class="relative z-10">
         <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">
-          <span class="glow-text">Posts</span>
+          <span class="glow-text">{i18n.postsPageTitle}</span>
         </h1>
         <p class="mt-3 max-w-lg text-foreground/70 italic">
-          Todos los artículos que he publicado.
+          {i18n.postsPageDesc}
         </p>
         <div class="mt-4 flex flex-wrap items-center gap-2">
-          <span class="hero-badge">{totalPosts} posts</span>
+          <span class="hero-badge">
+            {totalPosts} {totalPosts === 1 ? i18n.postUnitSingle : i18n.postUnitPlural}
+          </span>
           {
             page.lastPage > 1 && (
               <span class="hero-badge">
-                Página {page.currentPage}/{page.lastPage}
+                {i18n.pageIndicator} {page.currentPage}/{page.lastPage}
+                {i18n.pageSuffix}
               </span>
             )
           }
@@ -53,7 +59,12 @@ const totalPosts = page.total;
     <!-- Posts Toolbar -->
     <div class="posts-toolbar mb-8">
       <div class="posts-search-wrapper">
-        <div id="posts-pagefind" class="premium-search"></div>
+        <div
+          id="posts-pagefind"
+          class="premium-search"
+          data-dev-warning-title={i18n.devModeWarningTitle}
+          data-build-first-hint={i18n.buildFirstHint}
+        ></div>
       </div>
     </div>
 
@@ -77,14 +88,14 @@ const totalPosts = page.total;
                 <line x1="9" y1="15" x2="15" y2="15"></line>
               </svg>
             </div>
-            <h3 class="empty-title">Aún no hay posts</h3>
+            <h3 class="empty-title">{i18n.noPostsYet}</h3>
             <p class="empty-desc">
-              Vuelve más tarde para leer nuestros próximos artículos.
+              {i18n.noPostsDesc}
             </p>
           </div>
         ) : (
           <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {page.data.map((data: any) => <Card {...data} />)}
+            {page.data.map(data => <Card {...data} />)}
           </ul>
         )
       }
@@ -100,6 +111,8 @@ const totalPosts = page.total;
 
 <script>
   let cleanupController: AbortController | null = null;
+  const PAGEFIND_BUNDLE_PATH = "/pagefind/";
+  const POSTS_PAGEFIND_SELECTOR = "#posts-pagefind";
   
   function initPostsPage() {
     if (cleanupController) cleanupController.abort();
@@ -124,79 +137,102 @@ const totalPosts = page.total;
     }
 
     // Initialize Pagefind local search
-    const container = document.querySelector("#posts-pagefind");
-    if (!container || container.childElementCount > 0) return;
+    const container = document.querySelector<HTMLElement>(POSTS_PAGEFIND_SELECTOR);
+    if (!container || container.querySelector(".pagefind-ui")) return;
+    const devModeWarningTitle =
+      container.getAttribute("data-dev-warning-title") || "Dev mode warning";
+    const buildFirstHint =
+      container.getAttribute("data-build-first-hint") || "Run pnpm run build first.";
 
     const onIdle = window.requestIdleCallback || (cb => setTimeout(cb, 1));
     onIdle(async () => {
-      if (signal.aborted) return;
-      if (container.childElementCount > 0) return;
+      try {
+        if (signal.aborted || container.querySelector(".pagefind-ui")) return;
+        if (import.meta.env.DEV) {
+          console.info("[PostsPage] Initializing PagefindUI", {
+            element: POSTS_PAGEFIND_SELECTOR,
+            bundlePath: PAGEFIND_BUNDLE_PATH,
+          });
+        }
 
-      // @ts-expect-error
-      const { PagefindUI } = await import("@pagefind/default-ui");
+        // @ts-expect-error -- @pagefind/default-ui does not provide TypeScript types.
+        const { PagefindUI } = await import("@pagefind/default-ui");
 
-      // Navigation may have occurred while the module was loading (first load, uncached)
-      if (signal.aborted || container.childElementCount > 0) return;
+        // Navigation may have occurred while the module was loading (first load, uncached)
+        if (signal.aborted || container.querySelector(".pagefind-ui")) return;
 
-      if (import.meta.env.DEV) {
-        container.innerHTML = `
-          <div class="bg-muted/75 rounded p-4 text-sm mb-4 border border-border">
-            <p><strong>Dev Mode:</strong> La búsqueda intentará usar el índice construido más reciente. Si no ves resultados, ejecuta <code>pnpm run build</code> primero.</p>
-          </div>
-        `;
-        // Removed the early return to allow pagefind to attempt loading the local index
-      }
+        new PagefindUI({
+          element: POSTS_PAGEFIND_SELECTOR,
+          bundlePath: PAGEFIND_BUNDLE_PATH,
+          showImages: false,
+          showSubResults: true,
+        });
 
-      new PagefindUI({
-        element: "#posts-pagefind",
-        showImages: false,
-        showSubResults: true,
-      });
+        // Toggle default posts grid visibility when typing
+        const input = container.querySelector(
+          ".pagefind-ui__search-input"
+        ) as HTMLInputElement;
+        const defaultContainer = document.querySelector(
+          "[data-default-posts-container]"
+        ) as HTMLElement;
 
-      // Toggle default posts grid visibility when typing
-      const input = container.querySelector(".pagefind-ui__search-input") as HTMLInputElement;
-      const defaultContainer = document.querySelector("[data-default-posts-container]") as HTMLElement;
-      
-      if (input && defaultContainer) {
-        const toggleVisibility = () => {
-          const hasValue = input.value.trim().length > 0;
-          if (hasValue) {
-            defaultContainer.style.display = "none";
-          } else {
-            defaultContainer.style.display = "";
+        if (input && defaultContainer) {
+          const toggleVisibility = () => {
+            const hasValue = input.value.trim().length > 0;
+            if (hasValue) {
+              defaultContainer.style.display = "none";
+            } else {
+              defaultContainer.style.display = "";
+            }
+          };
+
+          input.addEventListener("input", toggleVisibility, { signal });
+
+          // Handle clear button
+          const clearBtn = container.querySelector(".pagefind-ui__search-clear");
+          if (clearBtn) {
+            clearBtn.addEventListener(
+              "click",
+              () => {
+                requestAnimationFrame(() => toggleVisibility());
+              },
+              { signal }
+            );
+          }
+        }
+
+        // Intercept Global Cmd+K / Ctrl+K to focus inline search instead of Modal
+        const handleCmdK = (e: KeyboardEvent) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+            e.preventDefault();
+            e.stopPropagation();
+            if (input) {
+              input.focus();
+              // Scroll to the search box if it's not visible
+              input.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
           }
         };
 
-        input.addEventListener("input", toggleVisibility, { signal });
-        
-        // Handle clear button
-        const clearBtn = container.querySelector(".pagefind-ui__search-clear");
-        if (clearBtn) {
-          clearBtn.addEventListener("click", () => {
-            requestAnimationFrame(() => toggleVisibility());
-          }, { signal });
-        }
+        // Use capture mode to intercept before the global modal listener
+        document.addEventListener("keydown", handleCmdK, {
+          signal,
+          capture: true,
+        });
+      } catch (error) {
+        console.error("[PostsPage] Pagefind initialization failed", error);
+        container.innerHTML = `
+          <div class="bg-muted/75 rounded p-4 text-sm border border-border space-y-2">
+            <p><strong>${devModeWarningTitle}</strong></p>
+            <p>${buildFirstHint}</p>
+          </div>
+        `;
       }
-
-      // Intercept Global Cmd+K / Ctrl+K to focus inline search instead of Modal
-      const handleCmdK = (e: KeyboardEvent) => {
-        if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-          e.preventDefault();
-          e.stopPropagation();
-          if (input) {
-            input.focus();
-            // Scroll to the search box if it's not visible
-            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }
-      };
-      
-      // Use capture mode to intercept before the global modal listener
-      document.addEventListener("keydown", handleCmdK, { signal, capture: true });
 
     });
   }
 
+  initPostsPage();
   document.addEventListener("astro:page-load", initPostsPage);
 </script>
 
