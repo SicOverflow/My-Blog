@@ -3,6 +3,7 @@ import IconMoon from "@/assets/icons/IconMoon.svg";
 import IconSearch from "@/assets/icons/IconSearch.svg";
 import IconSunHigh from "@/assets/icons/IconSunHigh.svg";
 import { SITE } from "@/config";
+import LanguageSwitcher from "./LanguageSwitcher.astro";
 import { getLangFromPath, getLocalePath, t } from "@/i18n/ui";
 
 interface Props {
@@ -107,6 +108,7 @@ const galleriesPath = getLocalePath(lang, "galleries");
             <IconSearch class="size-4" />
             <span>{i18n.search}</span>
           </button>
+          <LanguageSwitcher />
           {
             SITE.lightAndDarkMode && (
               <button
